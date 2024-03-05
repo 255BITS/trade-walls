@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, make_response, abort
+from db import Wall
 
 app = Flask(__name__)
 
@@ -31,6 +32,7 @@ def greet():
 
 @app.route('/api/addWall', methods=['POST'])
 def addWall():
+    Wall.create(type="buy", price="0.01", pair="ETH/NEAR", min_holdings=10, quantity=10)
     response = {"message": "Wall added!"}
     return jsonify(response)
 
