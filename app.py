@@ -29,5 +29,11 @@ def greet():
     response = {"message": "Ahoy from Flask with CORS and API Key!"}
     return jsonify(response)
 
+@app.route('/api/addWall', methods=['POST'])
+def addWall():
+    response = {"message": "Wall added!"}
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
