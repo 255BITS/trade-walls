@@ -16,7 +16,7 @@ API_KEY = 'your_api_key_here'  # The secret API key
 def cors_middleware(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,X-Api-Key'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,X-Api-Key,baggage,sentry-trace'
     return response
 
 @app.after_request
