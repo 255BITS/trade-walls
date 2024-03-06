@@ -3,18 +3,8 @@ from db import Wall
 
 app = Flask(__name__)
 
-API_KEY = 'your_api_key_here'  # The secret API key
-
-#@app.before_request
-#def api_auth():
-#    if request.method == 'OPTIONS':
-#        return
-#    api_key = request.headers.get('X-Api-Key')
-#    if not api_key or api_key != API_KEY:
-#        abort(401)
-
 def cors_middleware(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Origin'] = 'https://near.org'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type,X-Api-Key,baggage,sentry-trace'
     return response
@@ -27,7 +17,7 @@ def after_request_func(response):
 def greet():
     if request.method == 'OPTIONS':
         return cors_middleware(make_response('', 204))
-    response = {"message": "Ahoy from Flask with CORS and API Key!"}
+    response = {"status": "Connected"}
     return jsonify(response)
 
 @app.route('/api/addWall', methods=['POST'])
@@ -35,7 +25,6 @@ def addWall():
     Wall.create(type="buy", price="0.01", pair="ETH/NEAR", min_holdings=10, quantity=10)
     response = {"message": "Wall added!"}
     return jsonify(response)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
