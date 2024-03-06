@@ -9,19 +9,18 @@ class BaseModel(Model):
         database = db
 
 class Wall(BaseModel):
-    TYPE_CHOICES = (('buy', 'buy'), ('sell', 'sell'))
-
-    type = CharField(choices=TYPE_CHOICES)
-    price = CharField()
-    pair = CharField()
-    min_holdings = CharField()
+    bid_price = CharField()
+    keep = CharField(default="0")
+    ask_price = CharField()
     quantity = CharField()
+    pair = CharField()
 
 class OrderExecution(BaseModel):
     created_at = DateTimeField(constraints=[SQL('DEFAULT CURRENT_TIMESTAMP')])
     amount = CharField()
     unit = CharField()
     pair = CharField()
+    executed_at = DateField(null=True)
     wall = ForeignKeyField(Wall, backref='executions')
 
 # Step 3: Create the tables
