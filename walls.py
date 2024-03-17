@@ -2,50 +2,50 @@ import math
 from decimal import Decimal, Context
 
 class Walls:
-    def __init__(self, pair=None, min=0, max=None, walls=[], min_holdings=0, spread=2, selloff=0, sell_first=False):
+    def __init__(self, pair=None, bid_price=0, ask_price=None, quantities=[], keep=0, spread=2, selloff=0, sell_first=False):
         """
         Initializes a new instance of the Walls class with specified trading parameters.
 
         Parameters:
         - pair (str, optional): The trading pair (e.g., "NEAR/NANO" or "NANO/NANO").
-        - min (float): The minimum price level for the trading strategy. Example: 0.4 for NEAR, meaning the lowest buy price.
-        - max (float): The maximum price level for the trading strategy. Example: 0.6 for NEAR, meaning the highest sell price.
-        - walls (list): A list of amounts (integers or floats) representing the size of each wall. Example: [10, 20, 40] indicating three walls.
-        - min_holdings (float): The minimum amount of the asset to hold. Example: 10 NEAR.
-        - spread (int): The multiplier used to calculate the price difference between walls. Example: 2, meaning each wall is twice the price of the previous.
+        - bid_price (float): The minimum price level for the trading strategy. Example: 0.4 for NEAR, meaning the lowest buy price.
+        - ask_price (float): The maximum price level for the trading strategy. Example: 0.6 for NEAR, meaning the highest sell price.
+        - quantities (list): A list of amounts (integers or floats) representing the size of each wall. Example: [10, 20, 40] indicating three quantities.
+        - keep (float): The minimum amount of the asset to hold. Example: 10 NEAR.
+        - spread (int): The multiplier used to calculate the price difference between quantities. Example: 2, meaning each wall is twice the price of the previous.
         - selloff (float): The fraction of holdings to sell off when a sell condition is met. Example: 0.5, sell half of the holdings.
         - sell_first (bool): Indicates whether to sell before buying when initiating the strategy. Example: False, meaning buy actions are prioritized.
 
         Example Usage:
-        wall = Walls(pair="NEAR/NANO", min=0.4, max=0.6, walls=[10, 20, 40], min_holdings=10, spread=2)
+        wall = Walls(pair="NEAR/NANO", bid_price=0.4, ask_price=0.6, quantities=[10, 20, 40], keep=10, spread=2)
         """
-        assert(max >= min, "max must be > than min for " + pair)
+        assert(ask_price >= bid_price, "ask_price must be > than bid_price for " + pair)
         self.sell_first = sell_first
         self.pair = pair
-        self.min = min
-        self.max = max
+        self.bid_price = bid_price
+        self.ask_price = ask_price
         self.spread = spread
         self.ctx = Context(prec=8)
-        self.min_holdings = self.ctx.create_decimal_from_float(min_holdings)
+        self.keep = keep
         self.buy_amounts = []
         self.buy_prices = []
         self.sell_prices = []
         self.selloff = self.ctx.create_decimal_from_float(selloff)
         level = 0
-        self.buy_walls = walls
-        self.sell_walls = walls
-        for wall in walls:
-            unit_price = self.min / (spread** level)
+        self.buy_quantities = quantities
+        self.sell_quantities = quantities
+        for quantity in quantities:
+            unit_price = self.bid_price / (spread** level)
             level +=1
             self.buy_prices.append(unit_price)
-            self.buy_amounts.append(wall)
+            self.buy_amounts.append(quantity)
         self.sell_amounts = []
         level = 0
-        for wall in self.sell_walls:
-            unit_price = self.max * (spread** level)
+        for quantity in self.sell_quantities:
+            unit_price = self.ask_price * (spread** level)
             level +=1
             self.sell_prices.append(unit_price)
-            self.sell_amounts.append(wall)
+            self.sell_amounts.append(quantity)
         total_cost = 0.0
         total_profit = 0.0
 
@@ -60,12 +60,12 @@ class Walls:
         - A tuple containing the total number of coins purchased and the total potential spend in decimal format.
 
         Example:
-        Assuming no prior history and a strategy with walls [10, 20, 40], the potential spend to establish the first wall at a price of 0.4 NEAR/NANO would be 4 NANO.
+        Assuming no prior history and a strategy with quantities [10, 20, 40], the potential spend to establish the first wall at a price of 0.4 NEAR/NANO would be 4 NANO.
         """
         result = Decimal(0)
         coins_purchased = Decimal(0)
         if self.sell_first:
-            coins_purchased = Decimal(self.buy_walls[0])
+            coins_purchased = Decimal(self.buy_quantities[0])
         if history is not None:
             for h in history:
                 coins_purchased += h[1][0]
@@ -80,9 +80,9 @@ class Walls:
             if coins_purchased < 0:
                 coins_purchased = 0
 
-        mh = self.min_holdings
+        mh = self.keep
         mh -= coins_purchased
-        coins_purchased -= self.min_holdings
+        coins_purchased -= self.keep
         if mh > 0:
             result += Decimal(mh) * Decimal(self.buy_prices[0])
         return [coins_purchased, result]
@@ -102,7 +102,7 @@ class Walls:
         """
         holdings = self.ctx.create_decimal_from_float(0)
         if self.sell_first:
-            holdings += Decimal(self.buy_walls[0])
+            holdings += Decimal(self.buy_quantities[0])
         for action in history:
             item = action[1]
             if action[0] == 'sell':
@@ -129,15 +129,9 @@ class Walls:
         for action in history:
             item = action[1]
             if action[0] == 'sell':
-                if isinstance(item[1], Decimal):
-                    sold += item[0] * item[1]
-                else:
-                    sold += item[0] * self.ctx.create_decimal_from_float(item[1])
+                sold += item[0] * item[1]
             if action[0] == 'buy':
-                if isinstance(item[1], Decimal):
-                    sold += item[0] * item[1]
-                else:
-                    sold += item[0] * self.ctx.create_decimal_from_float(item[1])
+                sold += item[0] * item[1]
 
         return sold
 
@@ -158,37 +152,37 @@ class Walls:
         current_price = Decimal(current_price)
         proposed_action = None
         current_holdings = self.calculate_holdings(history)
-        available_coins = current_holdings - self.min_holdings
+        available_coins = current_holdings - self.keep
         buy_amount = 0
         sell_amount = 0
 
-        target_amount = self.min_holdings
+        target_amount = self.keep
         active_buy_wall = False
         for price, amount in zip(self.buy_prices, self.buy_amounts):
             if(current_price < price):
-                target_amount += self.ctx.create_decimal_from_float(amount)
+                target_amount += amount
                 active_buy_wall = True
         buy_amount = target_amount-current_holdings
 
         if active_buy_wall and buy_amount > 0:
             return ('buy', (buy_amount, current_price))
 
-        amount_needed = self.min_holdings
+        amount_needed = self.keep
         active_sell_wall = False
-        min_triggered_sell_wall = None
+        bid_price_triggered_sell_wall = None
         for price, amount in zip(self.sell_prices, self.sell_amounts):
             if(current_price < price):
-                amount_needed += self.ctx.create_decimal_from_float(amount)
+                amount_needed += amount
             else:
                 active_sell_wall = True
-                if min_triggered_sell_wall is None or min_triggered_sell_wall[1] > price:
-                    min_triggered_sell_wall = (amount, price)
+                if bid_price_triggered_sell_wall is None or bid_price_triggered_sell_wall[1] > price:
+                    bid_price_triggered_sell_wall = (amount, price)
         sell_amount = current_holdings - amount_needed
 
         if active_sell_wall:
 
             if len(history) > 0 and history[-1][0] == 'buy' and self.selloff > 0:
-                sell_amount = min(history[-1][1][0] * self.selloff, min_triggered_sell_wall[0])
+                sell_amount = bid_price(history[-1][1][0] * self.selloff, bid_price_triggered_sell_wall[0])
 
             if sell_amount > 0:
                 return ('sell', (sell_amount, current_price))
@@ -214,7 +208,7 @@ class Walls:
         print(" --- ")
 
 if __name__ == '__main__':
-    wall = Walls(pair="TEST/NANO", min = 0.4, max = 0.6, walls=[10,20,40], min_holdings=10, spread=2)
+    wall = Walls(pair="TEST/NANO", bid_price = 0.4, ask_price = 0.6, quantities=[10,20,40], keep=10, spread=2)
     wall.print()
     i = 0
     actions = []
