@@ -1,7 +1,16 @@
 from flask import Flask, request, jsonify, make_response, abort
 from db import Wall
+import json
+from decimal import Decimal
 
 app = Flask(__name__)
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)
 
 def cors_middleware(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -20,9 +29,14 @@ def greet():
     response = {"status": "Connected"}
     return jsonify(response)
 
-@app.route('/api/addWall', methods=['POST'])
+@app.route('/api/walls', methods=['POST'])
 def addWall():
-    Wall.create(type="buy", price="0.01", pair="ETH/NEAR", min_holdings=10, quantity=10)
+    print("Received")
+    print("request", request)
+    print("request", request.json)
+    data = request.json
+    print("Add wall", data)
+    Wall.create(**data)
     response = {"message": "Wall added!"}
     return jsonify(response)
 
@@ -33,12 +47,13 @@ def listWalls():
     walls_query = Wall.select()
 
     walls = [{
-        'pair': 'ETH/NEAR',
-        'quantity': 100,
-        'sell_price': 2,
-        'buy_price': 1,
-        'id': wall_row.id
-
+        'pair': wall_row.pair,
+        'quantity': wall_row.quantity,
+        'ask_price': wall_row.ask_price,
+        'bid_price': wall_row.bid_price,
+        'keep': wall_row.keep,
+        'id': wall_row.id,
+        'total': Decimal(wall_row.bid_price) * (Decimal(wall_row.quantity) + Decimal(wall_row.keep))
 
         } for wall_row in walls_query]
     return jsonify(walls)
