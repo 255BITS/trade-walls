@@ -8,7 +8,55 @@ import json
 from walls import Walls
 from notification import notification
 from db import Wall, OrderExecution
-from monitoring import MonitoringClient
+from monitoring_client import MonitoringClient
+
+monitoring_client = MonitoringClient()
+
+def format_number(value):
+    """Format numbers with precision tailored to their magnitude."""
+    if abs(value) >= 1e5:
+        # Large numbers use scientific notation.
+        formatted = f"{value:.2e}"
+    elif abs(value) >= 1:
+        if value == int(value):
+            # Whole numbers displayed without decimal places.
+            formatted = f"{int(value)}"
+        else:
+            # Standard numbers use two decimal places.
+            formatted = f"{value:,.2f}"
+    elif abs(value) == 0:
+        # Explicitly handle zero to avoid scientific notation for small numbers.
+        formatted = "0"
+    else:
+        # Small numbers use scientific notation or fixed decimal places as appropriate.
+        formatted = f"{value:.8f}".rstrip('0')
+    return formatted
+
+def print_trade_wall_status(wall, unit_price, proposed_action, history):
+    holdings = wall.calculate_holdings(history)
+    potential_cost = wall.potential_spend(history)[1]
+    print(f"=== Wall Status: {wall.pair} ===")
+    print(f"Market Price: {format_number(unit_price)} {wall.pair.split('/')[1]}/Unit")
+    print(f"Holdings: {format_number(holdings)} {wall.pair.split('/')[0]}")
+    print(f"Potential Cost: {format_number(potential_cost)} {wall.pair.split('/')[1]}")
+    
+    if proposed_action:
+        action = 'Buy' if proposed_action[0] == 'buy' else 'Sell'
+        amount = format_number(proposed_action[1][1])
+        price = format_number(proposed_action[1][0])
+        print(f"Action: {action} {amount} at {price}/{wall.pair.split('/')[1]}")
+    else:
+        print("Action: None required")
+    
+    if history:
+        print("Trade History:")
+        for action, (amount, price_per_unit) in history:
+            verb = 'Bought' if action == 'buy' else 'Sold'
+            total_cost = format_number(amount * price_per_unit)
+            print(f" - {verb} {format_number(amount)} {wall.pair.split('/')[0]} at {format_number(price_per_unit)} {wall.pair.split('/')[1]} each for {total_cost} {wall.pair.split('/')[1]} total")
+    else:
+        print("Trade History: None")
+    print("===")
 
 def urlopen(url, timeout=60, max_retries=3, retry_delay=5):
     retries = 0
@@ -33,12 +81,12 @@ def coingecko_details(ids):
 def flatten(xss):
     return [x for xs in xss for x in xs]
 
-def market_sell(db_wall, wall, amount, ask):
+def market_sell(db_wall, wall, amount, ask, lhs, rhs):
     # Automation can happen here
     notification("Trade Walls: sell %s estimated %.2e %s for %.2e %s" % (wall.pair, amount, lhs, ask, rhs))
     OrderExecution.create(wall=db_wall, amount=amount, total_price=ask, type='sell')
 
-def market_buy(db_wall, wall, amount, bid):
+def market_buy(db_wall, wall, amount, bid, lhs, rhs):
     # Automation can happen here
     notification("Trade Walls: buy %s estimated %.2e %s for %.2e %s" % (wall.pair, amount, lhs, bid, rhs))
     OrderExecution.create(wall=db_wall, amount=amount, total_price=bid, type='buy')
@@ -69,11 +117,11 @@ def process_walls():
         base = wall.pair.split("/")[1]
         if base not in total_potential:
             total_potential[base] = 0
-        print("Potential spend for", ("%-12s" % wall.pair.split("/")[0]), ("%-5.2f %s" % (wall.potential_spend(history=history)[1], wall.pair.split("/")[1])))
+        print("Potential spend for", ("%-12s" % wall.pair.split("/")[0]), format_number(wall.potential_spend(history=history)[1]), wall.pair.split("/")[1])
         total_potential[base] += wall.potential_spend(history=history)[1]
 
     for coin in total_potential.keys():
-        print("Total potential spend for ", coin, "=", ("%.2f" % total_potential[coin]))
+        print("Total potential spend for ", coin, "=", format_number(total_potential[coin]))
 
     coins = [wall.pair.split("/") for wall in walls]
     coins = list(set(flatten(coins)))
@@ -98,14 +146,12 @@ def process_walls():
         lhs_usd_price, rhs_usd_price = prices[lhs], prices[rhs]
         unit_price = Decimal(lhs_usd_price) / Decimal(rhs_usd_price)
         history = get_market_trade_history(db_wall)
-        print(wall.pair, "Current price", ("%-5.2f %s per %s" % (unit_price, rhs, lhs)))
         proposed_action = wall.step(Decimal(unit_price), history)
-        for h in history:
-            print(" -", h)
+        print_trade_wall_status(wall, unit_price, proposed_action, history)
         if proposed_action is not None and proposed_action[0] == "buy":
-            market_buy(db_wall, wall, proposed_action[1][1], proposed_action[1][0])
+            market_buy(db_wall, wall, proposed_action[1][1], proposed_action[1][0], lhs, rhs)
         if proposed_action is not None and proposed_action[0] == "sell":
-            market_sell(db_wall, wall, proposed_action[1][1], proposed_action[1][0])
+            market_sell(db_wall, wall, proposed_action[1][1], proposed_action[1][0], lhs, rhs)
 
 def main():
     while True:
