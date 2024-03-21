@@ -36,7 +36,7 @@ def print_trade_wall_status(wall, unit_price, proposed_action, history):
     holdings = wall.calculate_holdings(history)
     potential_cost = wall.potential_spend(history)[1]
     print(f"=== Wall Status: {wall.pair} ===")
-    print(f"Market Price: {format_number(unit_price)} {wall.pair.split('/')[1]}/Unit")
+    print(f"Market Price: {format_number(unit_price)} {wall.pair.split('/')[1]} per {wall.pair.split('/')[0]}")
     print(f"Holdings: {format_number(holdings)} {wall.pair.split('/')[0]}")
     print(f"Potential Cost: {format_number(potential_cost)} {wall.pair.split('/')[1]}")
     
