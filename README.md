@@ -15,7 +15,7 @@ TradeWalls runs locally on your infrastructure keeping your walls private.
 
 ## How It Works
 
-1. Choose two cryptocurrency pairs you believe in and want to accumulate.
+1. Choose two cryptocurrency pairs you believe in and want to accumulate. Refer to them by their coingecko ids (in the url for coingecko. Ex: coingecko. com/en/coins/near)
 2. Define a set of trading rules, or "walls," specifying the prices at which you want to buy or sell each asset.
 3. The autonomous TradeWalls agent monitors the market, alerting you when the planned trades become possible.
 4. Safely store your coins when not actively trading to ensure the security of your assets.
