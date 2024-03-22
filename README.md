@@ -58,4 +58,5 @@ Be sure to backup `trading.sqlite`
 
 1. TradeWalls will alert the WEBHOOK_URL that your trade is possible
 2. It will assume the trade went through for the amount given (written to trading.sqlite)
+2. You will have to make the trade.
 3. It will be ready for the ask to hit

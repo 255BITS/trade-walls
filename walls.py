@@ -207,6 +207,41 @@ class Walls:
         print("Unit price", self.buy_prices, "Sell", self.sell_prices)
         print(" --- ")
 
+    def status(self, history):
+        _, potential_spend = self.potential_spend(history)
+        coins_owned = self.calculate_holdings(history)
+
+        if potential_spend > 0:
+            return "Will bid at buy price using " + format_number(potential_spend) + " " + self.pair.split("/")[1]
+        if coins_owned > 0:
+            response = "Have " + format_number(coins_owned) + " " + self.pair.split("/")[0] + ". Will sell at ask price."
+            response += " Will keep " + format_number(self.keep) + " " + self.pair.split("/")[0] 
+            return response
+
+        print("___", coins_owned, potential_spend, history)
+        return "At keep amount"
+
+def format_number(value):
+    """Format numbers with precision tailored to their magnitude."""
+    if abs(value) >= 1e5:
+        # Large numbers use scientific notation.
+        formatted = f"{value:.2e}"
+    elif abs(value) >= 1:
+        if value == int(value):
+            # Whole numbers displayed without decimal places.
+            formatted = f"{int(value)}"
+        else:
+            # Standard numbers use two decimal places.
+            formatted = f"{value:,.2f}"
+    elif abs(value) == 0:
+        # Explicitly handle zero to avoid scientific notation for small numbers.
+        formatted = "0"
+    else:
+        # Small numbers use scientific notation or fixed decimal places as appropriate.
+        formatted = f"{value:.8f}".rstrip('0')
+    return formatted
+
+
 if __name__ == '__main__':
     wall = Walls(pair="TEST/NANO", bid_price = 0.4, ask_price = 0.6, quantities=[10,20,40], keep=10, spread=2)
     wall.print()

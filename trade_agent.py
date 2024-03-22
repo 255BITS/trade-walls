@@ -5,32 +5,12 @@ import datetime
 from decimal import Decimal, getcontext, localcontext
 import os
 import json
-from walls import Walls
+from walls import Walls, format_number
 from notification import notification
 from db import Wall, OrderExecution
 from monitoring_client import MonitoringClient
 
 monitoring_client = MonitoringClient()
-
-def format_number(value):
-    """Format numbers with precision tailored to their magnitude."""
-    if abs(value) >= 1e5:
-        # Large numbers use scientific notation.
-        formatted = f"{value:.2e}"
-    elif abs(value) >= 1:
-        if value == int(value):
-            # Whole numbers displayed without decimal places.
-            formatted = f"{int(value)}"
-        else:
-            # Standard numbers use two decimal places.
-            formatted = f"{value:,.2f}"
-    elif abs(value) == 0:
-        # Explicitly handle zero to avoid scientific notation for small numbers.
-        formatted = "0"
-    else:
-        # Small numbers use scientific notation or fixed decimal places as appropriate.
-        formatted = f"{value:.8f}".rstrip('0')
-    return formatted
 
 def print_trade_wall_status(wall, unit_price, proposed_action, history):
     holdings = wall.calculate_holdings(history)
@@ -97,11 +77,6 @@ def get_market_trade_history(db_wall):
 def process_walls():
     # Query all Wall objects
     db_walls = Wall.select()
-    if db_walls.count() == 0:
-        # Use the id from coingecko url, such as ethereum from https://www.coingecko.com/en/coins/ethereum
-        print("Creating fake walls")
-        Wall.create(bid_price="6", ask_price="12", pair="near/nano", keep="10", quantity="10")
-        db_walls = Wall.select()
 
     walls = []
     # Print each Wall object
