@@ -30,10 +30,10 @@ def print_trade_wall_status(wall, unit_price, proposed_action, history):
     
     if history:
         print("Trade History:")
-        for action, (amount, price_per_unit) in history:
+        for action, (amount, total_cost) in history:
+            price_per_unit = total_cost / amount
             verb = 'Bought' if action == 'buy' else 'Sold'
-            total_cost = format_number(amount * price_per_unit)
-            print(f" - {verb} {format_number(amount)} {wall.pair.split('/')[0]} at {format_number(price_per_unit)} {wall.pair.split('/')[1]} each for {total_cost} {wall.pair.split('/')[1]} total")
+            print(f" - {verb} {format_number(amount)} {wall.pair.split('/')[0]} at {format_number(price_per_unit)} {wall.pair.split('/')[1]} each for {format_number(total_cost)} {wall.pair.split('/')[1]} total")
     else:
         print("Trade History: None")
     print("===")
@@ -63,16 +63,16 @@ def flatten(xss):
 
 def market_sell(db_wall, wall, amount, ask, lhs, rhs):
     # Automation can happen here
-    notification("Trade Walls: sell %s estimated %.2e %s for %.2e %s" % (wall.pair, amount, lhs, ask, rhs))
-    OrderExecution.create(wall=db_wall, amount=amount, total_price=ask, type='sell')
+    notification("Trade Walls: sell %s estimated %.2e %s for %.2e %s" % (wall.pair, amount, lhs, ask*amount, rhs))
+    OrderExecution.create(wall=db_wall, amount=amount, total_price=(ask*amount), type='sell')
 
 def market_buy(db_wall, wall, amount, bid, lhs, rhs):
     # Automation can happen here
-    notification("Trade Walls: buy %s estimated %.2e %s for %.2e %s" % (wall.pair, amount, lhs, bid, rhs))
-    OrderExecution.create(wall=db_wall, amount=amount, total_price=bid, type='buy')
+    notification("Trade Walls: buy %s estimated %.2e %s for %.2e %s" % (wall.pair, amount, lhs, bid*amount, rhs))
+    OrderExecution.create(wall=db_wall, amount=amount, total_price=(bid*amount), type='buy')
 
 def get_market_trade_history(db_wall):
-    return [(order.type, (Decimal(order.total_price), Decimal(order.amount))) for order in db_wall.executions]
+    return [(order.type, (Decimal(order.amount), Decimal(order.total_price))) for order in db_wall.executions]
 
 def process_walls():
     # Query all Wall objects
@@ -124,9 +124,9 @@ def process_walls():
         proposed_action = wall.step(Decimal(unit_price), history)
         print_trade_wall_status(wall, unit_price, proposed_action, history)
         if proposed_action is not None and proposed_action[0] == "buy":
-            market_buy(db_wall, wall, proposed_action[1][1], proposed_action[1][0], lhs, rhs)
+            market_buy(db_wall, wall, proposed_action[1][0], proposed_action[1][1], lhs, rhs)
         if proposed_action is not None and proposed_action[0] == "sell":
-            market_sell(db_wall, wall, proposed_action[1][1], proposed_action[1][0], lhs, rhs)
+            market_sell(db_wall, wall, proposed_action[1][0], proposed_action[1][1], lhs, rhs)
 
 def main():
     while True:
