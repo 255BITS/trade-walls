@@ -41,9 +41,9 @@ To get started with TradeWalls, follow these steps:
 
 1. Clone the TradeWalls repository.
 2. Install the required dependencies by running `pip install -r requirements.txt`.
-3. Start the server by running `python app.py`.
-4. Set a `WEBHOOK_URL` for receiving time-sensitive notifications related to buying or selling at predefined trade walls. This can be a slack notification url. See `notification.py`
-4. Start the autonomous agent by running `python trade_agent.py`.
+3. Start the autonomous agent by running `python trade_agent.py`. This bootstraps trading.sqlite so it must be run before app.py.
+4. Start the server by running `python app.py`.
+5. Set a `WEBHOOK_URL` for receiving time-sensitive notifications related to buying or selling at predefined trade walls. This can be a slack notification url. See `notification.py`
 
 To ensure that your TradeWalls setup runs continuously and reliably for years, consider the following:
 
