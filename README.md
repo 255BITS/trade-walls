@@ -23,7 +23,7 @@ TradeWalls runs locally on your infrastructure keeping your walls private.
 
 ## Interacting with TradeWalls
 
-TradeWalls provides an interface powered by the AI Nexus on BOS. Users can interact with the LLM to suggest and create trading walls based on their preferences and market insights. The LLM assists in setting up trading strategies, allowing users to define their desired trading parameters.
+TradeWalls provides an interface powered by the AI Nexus on BOS. Users can interact with the LLM to suggest and create trading walls based on their preferences and market insights. The LLM assists in setting up trading strategies, allowing users to define their desired trading parameters. Note, please use GPT-4 as other models don't reliably return json.
 
 ## Considerations
 
@@ -44,6 +44,7 @@ To get started with TradeWalls, follow these steps:
 3. Start the autonomous agent by running `python trade_agent.py`. This bootstraps trading.sqlite so it must be run before app.py.
 4. Start the server by running `python app.py`.
 5. Set a `WEBHOOK_URL` for receiving time-sensitive notifications related to buying or selling at predefined trade walls. This can be a slack notification url. See `notification.py`
+6. Restart `trade_agent.py` with `WEBHOOK_URL` defined
 
 To ensure that your TradeWalls setup runs continuously and reliably for years, consider the following:
 
