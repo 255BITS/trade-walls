@@ -1,5 +1,4 @@
 # TradeWalls.near
-Entry for the Autonomous Agent: AI x Web3 Hackathon
 
 TradeWalls is a cryptocurrency trading tool that allows users to plan their trades in advance and have an autonomous agent execute them later. It utilizes a trading strategy aimed at optimizing the ownership of a chosen asset.
 
