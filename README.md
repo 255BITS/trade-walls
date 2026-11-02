@@ -42,8 +42,8 @@ To get started with TradeWalls, follow these steps:
 2. Install the required dependencies by running `pip install -r requirements.txt`.
 3. Start the autonomous agent by running `python trade_agent.py`. This bootstraps trading.sqlite so it must be run before app.py.
 4. Start the server by running `python app.py`.
-5. Set a `WEBHOOK_URL` for receiving time-sensitive notifications related to buying or selling at predefined trade walls. This can be a slack notification url. See `notification.py`
-6. Restart `trade_agent.py` with `WEBHOOK_URL` defined
+5. Set `MATTERMOST_WEBHOOK_URL` to a Mattermost incoming webhook for receiving time-sensitive buy/sell notifications. Our self-hosted server is https://chat.255labs.xyz; the webhook selects the destination channel. Keep its full URL in the runtime secret store, never git. See `notification.py`.
+6. Restart `trade_agent.py` with `MATTERMOST_WEBHOOK_URL` defined
 
 To ensure that your TradeWalls setup runs continuously and reliably for years, consider the following:
 
@@ -56,7 +56,15 @@ Be sure to backup `trading.sqlite`
 
 ## When a trade wall bid is hit
 
-1. TradeWalls will alert the WEBHOOK_URL that your trade is possible
+1. TradeWalls will alert the MATTERMOST_WEBHOOK_URL that your trade is possible
 2. It will assume the trade went through for the amount given (written to trading.sqlite)
 2. You will have to make the trade.
 3. It will be ready for the ask to hit
+
+## Notification migration
+
+This local-only tool has no catalogued running deployment. The optional notifier uses `MATTERMOST_WEBHOOK_URL`; the old generic `WEBHOOK_URL` variable is ignored. An unset or blank setting prints the notification to stdout. Requests use JSON, a five-second timeout, and best-effort delivery so a notification outage cannot interrupt trade handling. No message body or webhook secret is logged on failure.
+
+If an operator has an uncatalogued instance, back up its process configuration privately, set the new webhook, restart with its normal process manager, and confirm a notification canary without placing a trade. Roll back code and configuration together to the prior revision if needed, before retiring the old credential. This PR does not deploy or re-enable a trading agent. Track cutover with the inventory Slack-to-Mattermost release blitz.
+
+Validate locally with `python3 -m unittest discover -s tests -v` (local HTTP receiver only).
